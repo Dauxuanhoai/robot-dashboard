@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Lau Sàn - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f0f;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            padding: 24px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 14px;
+            margin: 2px 0;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 32px;
+            margin-bottom: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .robot-section {
+            text-align: center;
+        }
+
+        .status-indicator {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            transition: all 0.4s ease;
+            position: relative;
+        }
+
+        .status-indicator.active {
+            background: linear-gradient(135deg, #00ff88, #00cc6a);
+            box-shadow: 0 0 40px rgba(0, 255, 136, 0.3);
+        }
+
+        .status-indicator.inactive {
+            background: linear-gradient(135deg, #333, #555);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .status-indicator.loading {
+            background: linear-gradient(135deg, #ff9500, #ff7b00);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .status-text {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 24px;
+            opacity: 0.9;
+        }
+
+        .control-button {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .control-button:active {
+            transform: translateY(0);
+        }
+
+        .control-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .control-button.stop {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+        }
+
+        .control-button.stop:hover:not(:disabled) {
+            box-shadow: 0 8px 25px rgba(255, 65, 108, 0.4);
+        }
+
+        .humidity-section {
+            text-align: center;
+        }
+
+        .humidity-value {
+            font-size: 64px;
+            font-weight: 700;
+            margin: 24px 0;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .humidity-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 24px 0;
+        }
+
+        .humidity-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+
+        .humidity-status {
+            font-size: 14px;
+            opacity: 0.8;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            display: inline-block;
+        }
+
+        .connection-indicator {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4b2b;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .connection-indicator.connected {
+            background: #00ff88;
+            box-shadow: 0 0 16px rgba(0, 255, 136, 0.5);
+        }
+
+        .loading-dots {
+            display: inline-block;
+        }
+
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        .debug-info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-family: monospace;
+            color: #00ff88;
+            max-width: 300px;
+            word-wrap: break-word;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .card {
+                padding: 24px;
+            }
+            
+            .status-indicator {
+                width: 100px;
+                height: 100px;
+                font-size: 40px;
+            }
+            
+            .humidity-value {
+                font-size: 48px;
+            }
+            
+            .debug-info {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-indicator" id="connectionIndicator"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Robot Lau Sàn</h1>
+            <p><strong>Đồ án môn học 2</strong></p>
+            <p>Nguyễn Duy Tín - Học viện Hàng không Việt Nam</p>
+        </div>
+
+        <div class="card robot-section">
+            <div class="status-indicator loading" id="statusIndicator">
+                🤖
+            </div>
+            <div class="status-text" id="statusText">
+                Đang kết nối<span class="loading-dots"></span>
+            </div>
+            <button class="control-button" id="controlButton" onclick="toggleRobot()" disabled>
+                Đang tải<span class="loading-dots"></span>
+            </button>
+        </div>
+
+        <div class="card humidity-section">
+            <h3 style="margin-bottom: 16px; opacity: 0.8;">Độ ẩm không khí</h3>
+            <div class="humidity-value" id="humidityValue">--</div>
+            <div class="humidity-bar">
+                <div class="humidity-fill" id="humidityFill" style="width: 0%"></div>
+            </div>
+            <div class="humidity-status" id="humidityStatus">
+                Đang đọc dữ liệu<span class="loading-dots"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="debug-info" id="debugInfo">
+        Debug: Đang khởi tạo...
+    </div>
+
+    <script>
+        // Cấu hình Firebase
+        const FIREBASE_HOST = 'https://doanmonhoc2-ec1a7-default-rtdb.asia-southeast1.firebasedatabase.app';
+        const FIREBASE_AUTH = 'AIzaSyBDMBLuCLLcMiqO3HhAtxV74hdW3jVV1Z0';
+        
+        let currentRobotState = null;
+        let isUpdating = false;
+        let connectionStatus = false;
+
+        // Các phần tử DOM
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const controlButton = document.getElementById('controlButton');
+        const humidityValue = document.getElementById('humidityValue');
+        const humidityFill = document.getElementById('humidityFill');
+        const humidityStatus = document.getElementById('humidityStatus');
+        const connectionIndicator = document.getElementById('connectionIndicator');
+        const debugInfo = document.getElementById('debugInfo');
+
+        // Debug function
+        function updateDebug(message) {
+            debugInfo.textContent = `Debug: ${message}`;
+            console.log(`🐛 ${message}`);
+        }
+
+        // Hàm gọi API Firebase được cải thiện
+        async function makeFirebaseRequest(path, method = 'GET', data = null) {
+            try {
+                // Thử với auth key trước
+                let url = `${FIREBASE_HOST}${path}.json?auth=${FIREBASE_AUTH}`;
+                let options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data !== null) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                updateDebug(`${method} ${path} - Sending: ${data}`);
+                
+                let response = await fetch(url, options);
+                
+                // Nếu lỗi với auth key, thử không auth
+                if (!response.ok && method !== 'GET') {
+                    updateDebug(`Auth failed, trying without auth...`);
+                    url = `${FIREBASE_HOST}${path}.json`;
+                    response = await fetch(url, options);
+                }
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const result = await response.json();
+                updateDebug(`${method} ${path} - Success: ${JSON.stringify(result)}`);
+                return result;
+                
+            } catch (error) {
+                updateDebug(`${method} ${path} - Error: ${error.message}`);
+                throw error;
+            }
+        }
+
+        // Cập nhật trạng thái kết nối
+        function updateConnectionStatus(connected) {
+            connectionStatus = connected;
+            connectionIndicator.className = `connection-indicator ${connected ? 'connected' : ''}`;
+        }
+
+        // Đọc trạng thái robot
+        async function readRobotState() {
+            try {
+                const state = await makeFirebaseRequest('/robot_state/onoff');
+                
+                // Chuyển đổi state thành boolean (1 = true = bật, 0 = false = tắt)
+                const robotOn = state === 1;
+                
+                if (currentRobotState !== robotOn) {
+                    currentRobotState = robotOn;
+                    updateRobotUI();
+                }
+                
+                updateConnectionStatus(true);
+            } catch (error) {
+                updateConnectionStatus(false);
+                statusText.textContent = 'Lỗi kết nối';
+                statusIndicator.className = 'status-indicator inactive';
+                controlButton.textContent = 'Không thể kết nối';
+                controlButton.disabled = true;
+            }
+        }
+
+        // Cập nhật UI robot
+        function updateRobotUI() {
+            controlButton.disabled = false;
+            
+            if (currentRobotState) {
+                statusIndicator.className = 'status-indicator active';
+                statusText.textContent = 'Robot đang hoạt động';
+                controlButton.textContent = '⏹️ Tắt Robot';
+                controlButton.className = 'control-button stop';
+            } else {
+                statusIndicator.className = 'status-indicator inactive';
+                statusText.textContent = 'Robot đang dừng';
+                controlButton.textContent = '▶️ Bật Robot';
+                controlButton.className = 'control-button';
+            }
+        }
+
+        // Bật/tắt robot - phiên bản cải thiện
+        async function toggleRobot() {
+            if (isUpdating) return;
+            
+            isUpdating = true;
+            controlButton.disabled = true;
+            statusIndicator.className = 'status-indicator loading';
+            statusText.textContent = 'Đang xử lý...';
+            controlButton.innerHTML = 'Đang xử lý<span class="loading-dots"></span>';
+            
+            try {
+                // Logic: 1 = bật, 0 = tắt
+                const newState = currentRobotState ? 0 : 1;
+                updateDebug(`Changing state: ${currentRobotState ? 1 : 0} → ${newState}`);
+                
+                // Thử phương thức PUT trực tiếp
+                await makeFirebaseRequest('/robot_state/onoff', 'PUT', newState);
+                
+                // Đợi Firebase cập nhật
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Đọc lại để confirm
+                await readRobotState();
+                updateConnectionStatus(true);
+                
+                updateDebug(`State changed successfully to: ${newState}`);
+                
+            } catch (error) {
+                updateDebug(`Toggle failed: ${error.message}`);
+                
+                // Thử phương thức PATCH backup
+                try {
+                    const newState = currentRobotState ? 0 : 1;
+                    await makeFirebaseRequest('/robot_state', 'PATCH', { onoff: newState });
+                    
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await readRobotState();
+                    updateConnectionStatus(true);
+                    
+                    updateDebug(`PATCH method succeeded: ${newState}`);
+                    
+                } catch (patchError) {
+                    updateDebug(`All methods failed: ${patchError.message}`);
+                    
+                    statusText.textContent = 'Lỗi điều khiển';
+                    controlButton.textContent = 'Thử lại';
+                    updateConnectionStatus(false);
+                    
+                    setTimeout(() => {
+                        if (!isUpdating) {
+                            updateRobotUI();
+                        }
+                    }, 3000);
+                }
+            } finally {
+                isUpdating = false;
+            }
+        }
+
+        // Đọc dữ liệu độ ẩm
+        async function readHumidityData() {
+            try {
+                const humidity = await makeFirebaseRequest('/sensor_data/humidity');
+                
+                if (typeof humidity === 'number' && humidity >= 0 && humidity <= 100) {
+                    updateHumidityUI(humidity);
+                    updateConnectionStatus(true);
+                } else {
+                    throw new Error(`Invalid humidity data: ${humidity}`);
+                }
+            } catch (error) {
+                humidityValue.textContent = '--';
+                humidityStatus.textContent = 'Lỗi đọc cảm biến';
+                humidityFill.style.width = '0%';
+                updateConnectionStatus(false);
+            }
+        }
+
+        // Cập nhật UI độ ẩm
+        function updateHumidityUI(humidity) {
+            humidityValue.textContent = `${humidity}%`;
+            humidityFill.style.width = `${humidity}%`;
+            
+            let statusMessage;
+            if (humidity >= 70) {
+                statusMessage = '😊 Độ ẩm tốt';
+            } else if (humidity >= 40) {
+                statusMessage = '😐 Độ ẩm trung bình';
+            } else {
+                statusMessage = '😷 Độ ẩm thấp';
+            }
+            
+            humidityStatus.textContent = statusMessage;
+        }
+
+        // Khởi tạo ứng dụng
+        async function initApp() {
+            updateDebug('Khởi tạo ứng dụng...');
+            
+            try {
+                // Đọc dữ liệu ban đầu
+                await Promise.all([
+                    readRobotState(),
+                    readHumidityData()
+                ]);
+                
+                updateDebug('Khởi tạo thành công!');
+                
+            } catch (error) {
+                updateDebug(`Lỗi khởi tạo: ${error.message}`);
+                updateConnectionStatus(false);
+            }
+            
+            // Cập nhật dữ liệu định kỳ
+            setInterval(readRobotState, 3000);
+            setInterval(readHumidityData, 5000);
+        }
+
+        // Khởi động ứng dụng
+        document.addEventListener('DOMContentLoaded', initApp);
+
+        // Test Firebase permissions
+        async function testFirebasePermissions() {
+            try {
+                updateDebug('Testing Firebase permissions...');
+                
+                // Test read
+                const testRead = await makeFirebaseRequest('/robot_state');
+                updateDebug(`Read test: ${JSON.stringify(testRead)}`);
+                
+                // Test write
+                const currentTime = Date.now();
+                await makeFirebaseRequest('/test_write', 'PUT', currentTime);
+                updateDebug(`Write test: ${currentTime}`);
+                
+                // Test read back
+                const readBack = await makeFirebaseRequest('/test_write');
+                updateDebug(`Read back: ${readBack}`);
+                
+                if (readBack === currentTime) {
+                    updateDebug('✅ Firebase permissions OK');
+                } else {
+                    updateDebug('❌ Write permission issue');
+                }
+                
+            } catch (error) {
+                updateDebug(`❌ Permission test failed: ${error.message}`);
+            }
+        }
+
+        // Run permission test after 2 seconds
+        setTimeout(testFirebasePermissions, 2000);
+    </script>
+</body>
+</html>
